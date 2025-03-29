@@ -1,52 +1,73 @@
 <?php
-file_put_contents("log.txt", "Incoming request\n", FILE_APPEND);
+function log_message($message) {
+    $timestamp = date("[Y-m-d H:i:s]");
+    file_put_contents("log.txt", "$timestamp $message\n", FILE_APPEND);
+}
+
+log_message("Incoming request");
 
 $data = file_get_contents("php://input");
 
 if ($data) {
-    file_put_contents("log.txt", "Raw data: $data\n", FILE_APPEND);
 
     $input = json_decode($data, true);
     $name = trim($input["name"] ?? "");
     $name = preg_replace('/\s+/', ' ', $name); // collapse multiple spaces
 
     if ($name) {
-        $namesFile = 'names.json';
-        $namesData = [];
+        $logFile = 'downloads.json'; // use a proper data file, not your log
+        $usersFile = 'names.json';
+        $downloads = [];
+        $users = [];
 
-        if (file_exists($namesFile)) {
-            $json = file_get_contents($namesFile);
-            $namesData = json_decode($json, true) ?? [];
+        // Load users (for assigning/reusing ID)
+        if (file_exists($usersFile)) {
+            $json = file_get_contents($usersFile);
+            $users = json_decode($json, true) ?? [];
         }
 
-        $found = false;
-        foreach ($namesData as &$entry) {
-          $entryName = isset($entry['name']) ? trim(preg_replace('/\s+/', ' ', $entry['name'])) : '';
-      
-          if (mb_strtolower($entryName, 'UTF-8') === mb_strtolower($name, 'UTF-8')) {
-              $entry['count'] += 1;
-              $found = true;
-              file_put_contents("log.txt", "Updated count for: $name\n", FILE_APPEND);
-              break;
-          }
-      }
-      unset($entry); // VERY IMPORTANT: Break reference after loop
-      
-
-        if (!$found) {
-            $namesData[] = ["name" => $name, "count" => 1];
-            file_put_contents("log.txt", "Added new name: $name\n", FILE_APPEND);
+        // Load all downloads
+        if (file_exists($logFile)) {
+            $json = file_get_contents($logFile);
+            $downloads = json_decode($json, true) ?? [];
         }
 
-        file_put_contents($namesFile, json_encode($namesData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        file_put_contents("log.txt", "Saved: " . json_encode($namesData) . "\n", FILE_APPEND);
+        // Check if user already exists
+        $userId = null;
+        foreach ($users as $user) {
+            $entryName = isset($user['name']) ? trim(preg_replace('/\s+/', ' ', $user['name'])) : '';
+            if (mb_strtolower($entryName, 'UTF-8') === mb_strtolower($name, 'UTF-8')) {
+                $userId = $user['id'];
+                break;
+            }
+        }
+
+        // New user
+        if (!$userId) {
+            $userId = count($users) + 1;
+            $users[] = ["id" => $userId, "name" => $name];
+            log_message("New user: $name (ID: $userId)");
+        }
+
+        // Save updated users list (in case a new user was added)
+        file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        // Log this download
+        $downloads[] = [
+            "id" => $userId,
+            "name" => $name,
+            "timestamp" => date('Y-m-d H:i:s')
+        ];
+        file_put_contents($logFile, json_encode($downloads, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        log_message("Download logged for: $name (ID: $userId)");
+
         echo json_encode(["status" => "success"]);
     } else {
-        file_put_contents("log.txt", "Name missing in request\n", FILE_APPEND);
+        log_message("Name missing in request");
         echo json_encode(["status" => "no name"]);
     }
 } else {
-    file_put_contents("log.txt", "No data received\n", FILE_APPEND);
+    log_message("No data received");
     echo json_encode(["status" => "no data"]);
 }
 ?>

@@ -6,15 +6,15 @@
 
   <title> معايدة عيد الفطر فالكونز</title>
   <style>
-    * {
-      box-sizing: border-box;
+      * {
+        box-sizing: border-box;
+      }
+      @font-face {
+        font-family: 'IBM Plex Sans Arabic';
+        src: url('fonts/IBMPlexSansArabic-Bold.ttf') format('truetype');
+        font-weight: bold;
+        font-style: normal;
     }
-    @font-face {
-      font-family: 'IBM Plex Sans Arabic';
-      src: url('fonts/IBMPlexSansArabic-Bold.ttf') format('truetype');
-      font-weight: bold;
-      font-style: normal;
-  }
 
     body {
       margin: 0;
@@ -145,23 +145,6 @@
 
     const printedNames = [];
 
-    /*function saveName(name) {
-      console.log("Sending name to backend:", name);
-    
-      fetch('/save-names.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name })
-      })
-      .then(res => res.json())
-      .then(data => {
-        console.log("Response from backend:", data);
-      })
-      .catch(err => {
-        console.error("Error sending name:", err);
-      });
-    }
-      */
       function saveName(name) {
         console.log("Sending name to backend:", name);
       
@@ -197,11 +180,6 @@
         });
       }
       
-    
-      
-      
-
-
     image.onload = () => {
       drawCanvas();
     };
